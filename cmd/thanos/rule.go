@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -37,7 +38,6 @@ import (
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/agent"
-	"github.com/prometheus/prometheus/util/strutil"
 	"github.com/thanos-io/objstore/client"
 	"gopkg.in/yaml.v2"
 
@@ -277,6 +277,13 @@ func newRuleMetrics(reg *prometheus.Registry) *RuleMetrics {
 	return m
 }
 
+// TableLinkForExpression creates an escaped relative link to the table view of
+// the provided expression, modified url path from the origin Prometheus function.
+func TableLinkForExpression(expr string) string {
+	escapedExpression := url.QueryEscape(expr)
+	return fmt.Sprintf("/?g0.expr=%s&g0.tab=1", escapedExpression)
+}
+
 // runRule runs a rule evaluation component that continuously evaluates alerting and recording
 // rules. It sends alert notifications and writes TSDB data for results like a regular Prometheus server.
 func runRule(
@@ -494,7 +501,7 @@ func runRule(
 					StartsAt:     alrt.FiredAt,
 					Labels:       alrt.Labels,
 					Annotations:  alrt.Annotations,
-					GeneratorURL: conf.alertQueryURL.String() + strutil.TableLinkForExpression(expr),
+					GeneratorURL: conf.alertQueryURL.String() + TableLinkForExpression(expr),
 				}
 				if !alrt.ResolvedAt.IsZero() {
 					a.EndsAt = alrt.ResolvedAt
